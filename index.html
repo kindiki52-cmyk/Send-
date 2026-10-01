@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kyle FX</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui; background:#0b0f19; color:#fff; padding:20px; max-width:420px; margin:auto; }
+
+    /* Header */
+    .header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .logo { width:38px; height:38px; border-radius:10px; background:linear-gradient(135deg,#22c55e,#0ea5e9); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; color:#000; }
+    .brand { font-size:20px; font-weight:800; letter-spacing:0.5px; }
+    .brand span { color:#22c55e; }
+    .tag { font-size:11px; color:#8892b0; margin-top:-2px; }
+
+    .card { background:#151b2b; border-radius:16px; padding:20px; margin-bottom:16px; }
+    .balance { font-size:32px; font-weight:700; }
+    .sub { color:#8892b0; font-size:14px; }
+    .row { display:flex; gap:10px; margin-top:16px; }
+    button { flex:1; padding:14px; border-radius:10px; border:none; font-weight:700; cursor:pointer; font-size:14px; }
+    .primary { background:#22c55e; color:#000; }
+    .secondary { background:#2a3350; color:#fff; }
+    .danger { background:#ef4444; color:#fff; }
+    button:disabled { opacity:0.5; cursor:not-allowed; }
+    input, select { width:100%; padding:12px; border-radius:10px; border:1px solid #2a3350; background:#0b0f19; color:#fff; margin-top:8px; font-size:15px; }
+    .hidden { display:none !important; }
+    .spinner { width:36px; height:36px; border:4px solid #2a3350; border-top-color:#22c55e; border-radius:50%; animation:spin 1s linear infinite; margin:auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .center { text-align:center; }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,0.75); display:flex; align-items:center; justify-content:center; padding:20px; z-index:100; }
+    .modal { background:#151b2b; border-radius:16px; padding:20px; width:100%; max-width:380px; }
+    .label { color:#8892b0; font-size:13px; margin-top:14px; display:block; }
+    .method-row { display:flex; gap:10px; margin-top:8px; }
+    .method-btn { flex:1; padding:12px; border-radius:10px; border:2px solid #2a3350; background:transparent; color:#8892b0; font-weight:600; cursor:pointer; }
+    .method-btn.active { border-color:#22c55e; color:#22c55e; background:rgba(34,197,94,0.1); }
+    h2 { margin:0 0 8px 0; }
+    h3 { margin:0 0 8px 0; }
+    .footer { text-align:center; color:#3a4560; font-size:11px; margin-top:10px; }
+
+    /* Transaction History */
+    .tx-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .tx-header h3 { margin:0; }
+    .clear-btn { background:transparent; border:none; color:#ef4444; font-size:12px; font-weight:600; cursor:pointer; padding:0; flex:0; }
+    .tx-list { display:flex; flex-direction:column; gap:10px; max-height:340px; overflow-y:auto; }
+    .tx-item { display:flex; justify-content:space-between; align-items:center; padding:10px; border-radius:10px; background:#0b0f19; border-left:3px solid #2a3350; }
+    .tx-item.add { border-left-color:#22c55e; }
+    .tx-item.send { border-left-color:#0ea5e9; }
+    .tx-item.withdraw { border-left-color:#f59e0b; }
+    .tx-left { display:flex; flex-direction:column; gap:2px; }
+    .tx-title { font-size:14px; font-weight:600; }
+    .tx-meta { font-size:11px; color:#8892b0; }
+    .tx-amount { font-weight:700; font-size:14px; text-align:right; }
+    .tx-amount.add { color:#22c55e; }
+    .tx-amount.send { color:#0ea5e9; }
+    .tx-amount.withdraw { color:#f59e0b; }
+    .tx-empty { text-align:center; color:#8892b0; font-size:13px; padding:20px 0; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <div class="header">
+    <div class="logo">K</div>
+    <div>
+      <div class="brand">Kyle <span>FX</span></div>
+      <div class="tag">Crypto → Mobile Money</div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="dashboard" class="card">
+    <div class="sub">Virtual Balance</div>
+    <div class="balance"><span id="bal">250.00</span> USDT</div>
+    <div class="sub">≈ KES <span id="kesBal">32,250</span></div>
+    <div class="row">
+      <button class="secondary" onclick="openModal('add')">+ Add</button>
+      <button class="primary" onclick="openModal('send')">Send</button>
+    </div>
+    <div class="row">
+      <button class="secondary" onclick="openModal('withdraw')" style="flex:1;">Withdraw</button>
+    </div>
+  </div>
+
+  <!-- ===== TRANSACTION HISTORY ===== -->
+  <div class="card">
+    <div class="tx-header">
+      <h3>Transaction History</h3>
+      <button class="clear-btn" onclick="clearHistory()">Clear</button>
+    </div>
+    <div id="txList" class="tx-list"></div>
+  </div>
+
+  <!-- ===== SEND PAGE ===== -->
+  <div id="sendPage" class="card hidden">
+    <h3>Send to Mobile Money</h3>
+    <div class="sub">Choose network</div>
+    <div class="method-row">
+      <button class="method-btn active" id="mMpesa" onclick="pickMethod('send','Mpesa')">M-Pesa</button>
+      <button class="method-btn" id="mAirtel" onclick="pickMethod('send','Airtel')">Airtel Money</button>
+    </div>
+    <label class="label">Amount (USDT)</label>
+    <input id="sendAmount" type="number" placeholder="e.g. 10" oninput="updateSendPreview()">
+    <div class="sub" style="margin-top:6px">Recipient gets ≈ KES <span id="sendPreview">0</span></div>
+    <label class="label">Recipient Phone Number</label>
+    <input id="sendPhone" type="tel" placeholder="07XX XXX XXX">
+    <div class="row">
+      <button class="secondary" onclick="backToDash('send')">Cancel</button>
+      <button class="primary" onclick="processSend()">Send</button>
+    </div>
+  </div>
+
+  <!-- ===== WITHDRAW PAGE ===== -->
+  <div id="withdrawPage" class="card hidden">
+    <h3>Withdraw to Mobile Money</h3>
+    <div class="sub">Choose network</div>
+    <div class="method-row">
+      <button class="method-btn active" id="wMpesa" onclick="pickMethod('withdraw','Mpesa')">M-Pesa</button>
+      <button class="method-btn" id="wAirtel" onclick="pickMethod('withdraw','Airtel')">Airtel Money</button>
+    </div>
+    <label class="label">Amount (USDT)</label>
+    <input id="withdrawAmount" type="number" placeholder="e.g. 50" oninput="updateWithdrawPreview()">
+    <div class="sub" style="margin-top:6px">You'll receive ≈ KES <span id="withdrawPreview">0</span></div>
+    <label class="label">Your Phone Number</label>
+    <input id="withdrawPhone" type="tel" placeholder="07XX XXX XXX">
+    <div class="row">
+      <button class="secondary" onclick="backToDash('withdraw')">Cancel</button>
+      <button class="danger" onclick="processWithdraw()">Withdraw</button>
+    </div>
+  </div>
+
+  <!-- ===== PROCESSING PAGE ===== -->
+  <div id="processingPage" class="card hidden center">
+    <div class="spinner"></div>
+    <p id="processingMsg">Processing…</p>
+    <p class="sub" id="processingSub">Please wait</p>
+  </div>
+
+  <!-- ===== RESULT PAGE ===== -->
+  <div id="resultPage" class="card hidden center">
+    <h2 id="resultIcon">✅</h2>
+    <h3 id="resultTitle">Success</h3>
+    <p id="resultMsg"></p>
+    <p class="sub">Transaction ID: <span id="resultTxid"></span></p>
+    <button class="primary" style="width:100%; margin-top:12px;" onclick="finishFlow()">Back to Wallet</button>
+  </div>
+
+  <!-- ===== ADD FUNDS MODAL ===== -->
+  <div id="addModal" class="modal-bg hidden">
+    <div class="modal">
+      <h3>Add Virtual Funds</h3>
+      <p class="sub" style="margin-top:0;">Instantly credit your Kyle FX demo wallet.</p>
+      <label class="label">Asset</label>
+      <select id="addAsset">
+        <option value="USDT">USDT (Tether)</option>
+        <option value="BTC">BTC (Bitcoin)</option>
+        <option value="ETH">ETH (Ethereum)</option>
+        <option value="SOL">SOL (Solana)</option>
+      </select>
+      <label class="label">Amount</label>
+      <input id="addAmount" type="number" placeholder="e.g. 100">
+      <div class="row">
+        <button class="secondary" onclick="closeModal()">Cancel</button>
+        <button class="primary" onclick="confirmAdd()">Add Funds</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD CONFIRMATION MODAL ===== -->
+  <div id="addConfirmModal" class="modal-bg hidden">
+    <div class="modal center">
+      <h2>✅</h2>
+      <h3>Funds Added</h3>
+      <p id="addConfirmMsg"></p>
+      <button class="primary" style="width:100%;" onclick="closeAddConfirm()">Done</button>
+    </div>
+  </div>
+
+  <div class="footer">Kyle FX · Demo Mode · No real funds involved</div>
+
+<script>
+  // ===== CONFIG =====
+  const RATE = 129; // 1 USDT ≈ 129 KES (fake rate)
+  let balance = 250;
+  let holdings = { USDT: 250, BTC: 0, ETH: 0, SOL: 0 };
+  let sendMethod = 'Mpesa';
+  let withdrawMethod = 'Mpesa';
+
+  // ===== FAKE TRANSACTION HISTORY (pre-seeded) =====
+  let transactions = [
+    { type:'add',      title:'Added USDT',       meta:'Asset deposit',              amount:100,  ts: Date.now() - 86400000*3 },
+    { type:'send',     title:'Sent to M-Pesa',   meta:'0712 345 678',               amount:20,   ts: Date.now() - 86400000*2 },
+    { type:'withdraw', title:'Withdrawn M-Pesa', meta:'0733 111 222',               amount:15,   ts: Date.now() - 86400000*1 },
+    { type:'add',      title:'Added BTC',        meta:'Asset deposit',              amount:0.002,ts: Date.now() - 3600000*5 },
+  ];
+
+  // ===== HELPERS =====
+  function el(id) { return document.getElementById(id); }
+
+  function timeAgo(ts) {
+    const diff = Date.now() - ts;
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'Just now';
+    if (mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    const days = Math.floor(hrs / 24);
+    return days + 'd ago';
+  }
+
+  function renderHistory() {
+    const list = el('txList');
+    if (!transactions.length) {
+      list.innerHTML = '<div class="tx-empty">No transactions yet</div>';
+      return;
+    }
+    list.innerHTML = transactions.map(tx => `
+      <div class="tx-item ${tx.type}">
+        <div class="tx-left">
+          <div class="tx-title">${tx.title}</div>
+          <div class="tx-meta">${tx.meta} · ${timeAgo(tx.ts)}</div>
+        </div>
+        <div class="tx-amount ${tx.type}">
+          ${tx.type === 'add' ? '+' : '-'}${tx.amount} ${tx.type === 'add' ? (tx.asset || 'USDT') : 'USDT'}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function addTx(tx) {
+    transactions.unshift(tx);
+    renderHistory();
+  }
+
+  function clearHistory() {
+    if (!confirm('Clear all transaction history?')) return;
+    transactions = [];
+    renderHistory();
+  }
+
+  function refresh() {
+    el('bal').textContent = balance.toFixed(2);
+    el('kesBal').textContent = (balance * RATE).toLocaleString();
+  }
+
+  function hideAll() {
+    ['dashboard','sendPage','withdrawPage','processingPage','resultPage'].forEach(id => el(id).classList.add('hidden'));
+  }
+
+  function backToDash(page) {
+    hideAll();
+    el('dashboard').classList.remove('hidden');
+    document.querySelectorAll('.card')[1].classList.remove('hidden'); // history card
+    if (page === 'send') { el('sendAmount').value = ''; el('sendPhone').value = ''; updateSendPreview(); }
+    if (page === 'withdraw') { el('withdrawAmount').value = ''; el('withdrawPhone').value = ''; updateWithdrawPreview(); }
+  }
+
+  function finishFlow() {
+    hideAll();
+    el('dashboard').classList.remove('hidden');
+    document.querySelectorAll('.card')[1].classList.remove('hidden');
+  }
+
+  // ===== MODAL (ADD) =====
+  function openModal(type) {
+    if (type === 'add') el('addModal').classList.remove('hidden');
+    if (type === 'send') { hideAll(); el('sendPage').classList.remove('hidden'); }
+    if (type === 'withdraw') { hideAll(); el('withdrawPage').classList.remove('hidden'); }
+  }
+  function closeModal() {
+    el('addModal').classList.add('hidden');
+    el('addAmount').value = '';
+  }
+
+  function confirmAdd() {
+    const asset = el('addAsset').value;
+    const amt = parseFloat(el('addAmount').value);
+    if (!amt || amt <= 0) return alert('Enter a valid amount');
+
+    holdings[asset] = (holdings[asset] || 0) + amt;
+    balance += amt;
+    refresh();
+
+    addTx({
+      type: 'add',
+      title: `Added ${asset}`,
+      meta: 'Asset deposit',
+      amount: amt,
+      asset: asset,
+      ts: Date.now()
+    });
+
+    closeModal();
+    el('addConfirmMsg').textContent = `+${amt} ${asset} added to your Kyle FX wallet`;
+    el('addConfirmModal').classList.remove('hidden');
+  }
+  function closeAddConfirm() {
+    el('addConfirmModal').classList.add('hidden');
+  }
+
+  // ===== METHOD PICKER =====
+  function pickMethod(flow, method) {
+    if (flow === 'send') {
+      sendMethod = method;
+      el('mMpesa').classList.toggle('active', method === 'Mpesa');
+      el('mAirtel').classList.toggle('active', method === 'Airtel');
+    } else {
+      withdrawMethod = method;
+      el('wMpesa').classList.toggle('active', method === 'Mpesa');
+      el('wAirtel').classList.toggle('active', method === 'Airtel');
+    }
+  }
+
+  // ===== PREVIEWS =====
+  function updateSendPreview() {
+    const amt = parseFloat(el('sendAmount').value) || 0;
+    el('sendPreview').textContent = (amt * RATE).toLocaleString();
+  }
+  function updateWithdrawPreview() {
+    const amt = parseFloat(el('withdrawAmount').value) || 0;
+    el('withdrawPreview').textContent = (amt * RATE).toLocaleString();
+  }
+
+  // ===== SEND FLOW =====
+  function processSend() {
+    const amt = parseFloat(el('sendAmount').value);
+    const phone = el('sendPhone').value;
+    if (!amt || amt <= 0) return alert('Enter a valid amount');
+    if (amt > balance) return alert('Insufficient balance');
+    if (!/^0\d{9}$/.test(phone)) return alert('Enter a valid phone number (e.g. 0712345678)');
+
+    hideAll();
+    el('processingMsg').textContent = `Sending to ${sendMethod === 'Mpesa' ? 'M-Pesa' : 'Airtel Money'}…`;
+    el('processingSub').textContent = 'Initiating transfer to ' + phone;
+    el('processingPage').classList.remove('hidden');
+
+    setTimeout(() => {
+      balance -= amt;
+      refresh();
+
+      addTx({
+        type: 'send',
+        title: `Sent to ${sendMethod === 'Mpesa' ? 'M-Pesa' : 'Airtel Money'}`,
+        meta: phone,
+        amount: amt,
+        ts: Date.now()
+      });
+
+      el('resultIcon').textContent = '✅';
+      el('resultTitle').textContent = 'Sent';
+      el('resultMsg').textContent = `KES ${(amt * RATE).toLocaleString()} sent to ${phone} via ${sendMethod === 'Mpesa' ? 'M-Pesa' : 'Airtel Money'}`;
+      el('resultTxid').textContent = 'KFX-TXN' + Date.now();
+
+      el('processingPage').classList.add('hidden');
+      el('resultPage').classList.remove('hidden');
+    }, 3000);
+  }
+
+  // ===== WITHDRAW FLOW =====
+  function processWithdraw() {
+    const amt = parseFloat(el('withdrawAmount').value);
+    const phone = el('withdrawPhone').value;
+    if (!amt || amt <= 0) return alert('Enter a valid amount');
+    if (amt > balance) return alert('Insufficient balance');
+    if (!/^0\d{9}$/.test(phone)) return alert('Enter a valid phone number (e.g. 0712345678)');
+
+    hideAll();
+    el('processingMsg').textContent = 'Withdrawal in process…';
+    el('processingSub').textContent = 'This may take a moment';
+    el('processingPage').classList.remove('hidden');
+
+    setTimeout(() => {
+      balance -= amt;
+      refresh();
+
+      addTx({
+        type: 'withdraw',
+        title: `Withdrawn ${withdrawMethod === 'Mpesa' ? 'M-Pesa' : 'Airtel Money'}`,
+        meta: phone,
+        amount: amt,
+        ts: Date.now()
+      });
+
+      el('resultIcon').textContent = '⏳';
+      el('resultTitle').textContent = 'Withdrawal In Process';
+      el('resultMsg').textContent = `KES ${(amt * RATE).toLocaleString()} will reflect on your account (${phone}) shortly via ${withdrawMethod === 'Mpesa' ? 'M-Pesa' : 'Airtel Money'}.`;
+      el('resultTxid').textContent = 'KFX-WDR' + Date.now();
+
+      el('processingPage').classList.add('hidden');
+      el('resultPage').classList.remove('hidden');
+    }, 3000);
+  }
+
+  // ===== INIT =====
+  refresh();
+  renderHistory();
+</script>
+</body>
+      </html>
